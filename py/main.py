@@ -688,12 +688,6 @@ def main() -> None:
         )
 
     print("\nExecucao concluida.")
-    if not args.no_html:
-        report_path = (output_dir / "report.html").resolve()
-        try:
-            webbrowser.open_new_tab(report_path.as_uri())
-        except Exception as exc:  # pragma: no cover - abrir browser nao deve quebrar execucao
-            print(f"Aviso: nao foi possivel abrir automaticamente o relatorio ({exc})", file=sys.stderr)
 
 
 if __name__ == "__main__":
