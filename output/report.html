@@ -1,0 +1,188 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatorio - Deteccao de Fraudes</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 24px; background-color: #f8fafc; color: #111827; }
+        h1, h2, h3 { color: #1f2937; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 24px; }
+        th, td { border: 1px solid #cbd5f5; padding: 8px 12px; text-align: left; }
+        th { background-color: #ede9fe; }
+        .card { background: white; border-radius: 8px; padding: 16px 20px; box-shadow: 0 2px 6px rgba(79,70,229,0.1); margin-bottom: 24px; }
+        .confusion { display: flex; flex-wrap: wrap; gap: 24px; }
+        .confusion img { max-width: 360px; width: 100%; border: 1px solid #cbd5f5; border-radius: 8px; }
+        pre { background-color: #1f2937; color: #f9fafb; padding: 16px; border-radius: 6px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Deteccao de Fraudes em Cartoes de Credito</h1>
+    <div class="card">
+        <h2>Resumo do Dataset</h2>
+        <p><strong>Instancias:</strong> 1759 | <strong>Features:</strong> 30 | <strong>Fraudes (%)</strong> 27.97</p>
+        <table>
+            <thead>
+                <tr><th>Classe</th><th>Quantidade</th><th>Percentual</th></tr>
+            </thead>
+            <tbody>
+                
+                <tr><td>0</td><td>1267</td><td>72.03%</td></tr>
+                
+                <tr><td>1</td><td>492</td><td>27.97%</td></tr>
+                
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>Modelos Individuais</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Modelo</th>
+                    <th>F1 Macro (CV)</th>
+                    <th>Acuracia (Teste)</th>
+                    <th>F1 Macro (Teste)</th>
+                    <th>Recall Macro (Teste)</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+                <tr>
+                    <td>logistic_regression</td>
+                    <td>0.9531</td>
+                    <td>0.9545</td>
+                    <td>0.9415</td>
+                    <td>0.9278</td>
+                </tr>
+                
+                <tr>
+                    <td>random_forest</td>
+                    <td>0.9539</td>
+                    <td>0.9545</td>
+                    <td>0.9411</td>
+                    <td>0.9246</td>
+                </tr>
+                
+                <tr>
+                    <td>gradient_boosting</td>
+                    <td>0.949</td>
+                    <td>0.9545</td>
+                    <td>0.9411</td>
+                    <td>0.9246</td>
+                </tr>
+                
+                <tr>
+                    <td>knn</td>
+                    <td>0.9459</td>
+                    <td>0.946</td>
+                    <td>0.9303</td>
+                    <td>0.9156</td>
+                </tr>
+                
+                <tr>
+                    <td>svm</td>
+                    <td>0.9528</td>
+                    <td>0.946</td>
+                    <td>0.9293</td>
+                    <td>0.9093</td>
+                </tr>
+                
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <h2>Ensemble (Voting Classifier)</h2>
+        <p><strong>Estimadores combinados:</strong> logistic_regression, random_forest, gradient_boosting</p>
+        <p><strong>F1 Macro (Teste):</strong> 0.9415 |
+           <strong>Recall Macro:</strong> 0.9278 |
+           <strong>Acuracia:</strong> 0.9545</p>
+    </div>
+
+    <div class="card">
+        <h2>Matrizes de Confusao</h2>
+        <div class="confusion">
+            <div>
+                <h3>Melhor Modelo Individual</h3>
+                <img src="confusion_best.png" alt="Matriz de confusao - melhor modelo">
+            </div>
+            <div>
+                <h3>Ensemble</h3>
+                <img src="confusion_ensemble.png" alt="Matriz de confusao - ensemble">
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Relatorios Textuais</h2>
+        
+        <h3>logistic_regression</h3>
+        <pre>              precision    recall  f1-score   support
+
+           0     0.9508    0.9882    0.9691       254
+           1     0.9659    0.8673    0.9140        98
+
+    accuracy                         0.9545       352
+   macro avg     0.9583    0.9278    0.9415       352
+weighted avg     0.9550    0.9545    0.9538       352
+</pre>
+        
+        <h3>random_forest</h3>
+        <pre>              precision    recall  f1-score   support
+
+           0     0.9474    0.9921    0.9692       254
+           1     0.9767    0.8571    0.9130        98
+
+    accuracy                         0.9545       352
+   macro avg     0.9621    0.9246    0.9411       352
+weighted avg     0.9555    0.9545    0.9536       352
+</pre>
+        
+        <h3>gradient_boosting</h3>
+        <pre>              precision    recall  f1-score   support
+
+           0     0.9474    0.9921    0.9692       254
+           1     0.9767    0.8571    0.9130        98
+
+    accuracy                         0.9545       352
+   macro avg     0.9621    0.9246    0.9411       352
+weighted avg     0.9555    0.9545    0.9536       352
+</pre>
+        
+        <h3>knn</h3>
+        <pre>              precision    recall  f1-score   support
+
+           0     0.9434    0.9843    0.9634       254
+           1     0.9540    0.8469    0.8973        98
+
+    accuracy                         0.9460       352
+   macro avg     0.9487    0.9156    0.9303       352
+weighted avg     0.9464    0.9460    0.9450       352
+</pre>
+        
+        <h3>svm</h3>
+        <pre>              precision    recall  f1-score   support
+
+           0     0.9368    0.9921    0.9637       254
+           1     0.9759    0.8265    0.8950        98
+
+    accuracy                         0.9460       352
+   macro avg     0.9564    0.9093    0.9293       352
+weighted avg     0.9477    0.9460    0.9446       352
+</pre>
+        
+        <h3>voting_ensemble</h3>
+        <pre>              precision    recall  f1-score   support
+
+           0     0.9508    0.9882    0.9691       254
+           1     0.9659    0.8673    0.9140        98
+
+    accuracy                         0.9545       352
+   macro avg     0.9583    0.9278    0.9415       352
+weighted avg     0.9550    0.9545    0.9538       352
+</pre>
+    </div>
+</body>
+</html>
