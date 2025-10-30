@@ -1,6 +1,6 @@
 # Detecção de Fraudes em Cartões de Crédito
 
-Projeto desenvolvido a partir do conjunto de dados fornecido em `creditcard - menor balanceado.csv` e das diretrizes do documento _Trab. Machine Learning.pdf_. O objetivo é construir, comparar e combinar modelos de Machine Learning capazes de identificar transações fraudulentas em um cenário desbalanceado.
+Projeto desenvolvido a partir do conjunto de dados fornecido em `creditcard - menor balanceado.csv` e das diretrizes do documento _Trab. Machine Learning.pdf_ (ambos devem ser adicionados manualmente à pasta do projeto). O objetivo é construir, comparar e combinar modelos de Machine Learning capazes de identificar transações fraudulentas em um cenário desbalanceado.
 
 ## Visão Geral
 - **Pré-processamento**: padronização (`StandardScaler`), seleção de atributos (`SelectKBest`) e balanceamento com SMOTE.
@@ -10,7 +10,6 @@ Projeto desenvolvido a partir do conjunto de dados fornecido em `creditcard - me
 
 ## Estrutura dos Arquivos
 - `py/main.py` — script principal que executa todo o pipeline.
-- `creditcard - menor balanceado.csv` — base de dados com as transações rotuladas.
 - `output/` — pasta gerada automaticamente com:
   - `report.html` — relatório interativo resumindo resultados.
   - `confusion_best.png` — matriz de confusão do melhor modelo individual.
@@ -18,7 +17,7 @@ Projeto desenvolvido a partir do conjunto de dados fornecido em `creditcard - me
   - `metrics.csv` — tabela com métricas de validação cruzada e de teste.
 
 ## Requisitos
-Certifique-se de possuir Python 3.10+ instalado. Instale as dependências (user install recomendado em ambientes sem privilégios):
+Certifique-se de possuir Python 3.10+ instalado e de disponibilizar o arquivo `creditcard - menor balanceado.csv` na raiz do projeto (o dataset não é versionado neste repositório). Instale as dependências (user install recomendado em ambientes sem privilégios):
 
 ```bash
 pip install pandas scikit-learn imbalanced-learn seaborn matplotlib jinja2
