@@ -4,7 +4,7 @@ import sys
 import webbrowser
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -301,6 +301,7 @@ def export_html_report(
     model_results: List[ModelResult],
     ensemble_result: ModelResult,
     confusion_paths: Dict[str, str],
+    run_context: str,
 ) -> None:
     template_text = """
 <!DOCTYPE html>
@@ -324,6 +325,7 @@ def export_html_report(
     <h1>Deteccao de Fraudes em Cartoes de Credito</h1>
     <div class="card">
         <h2>Resumo do Dataset</h2>
+        <p><strong>Modo de execucao:</strong> {{ run_context }}</p>
         <p><strong>Instancias:</strong> {{ dataset_info.samples }} | <strong>Features:</strong> {{ dataset_info.features }} | <strong>Fraudes (%)</strong> {{ dataset_info.fraud_percentage | round(2) }}</p>
         <table>
             <thead>
@@ -403,6 +405,7 @@ def export_html_report(
         model_results=model_results,
         ensemble_result=ensemble_result,
         confusion_paths=confusion_paths,
+        run_context=run_context,
     )
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "report.html").write_text(rendered, encoding="utf-8")
@@ -422,28 +425,14 @@ def summarize_dataset(x: pd.DataFrame, y: pd.Series) -> Dict[str, object]:
     }
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Treinamento para deteccao de fraudes em cartoes.")
-    parser.add_argument(
-        "--dataset",
-        type=Path,
-        default=Path("creditcard - menor balanceado.csv"),
-        help="Caminho para o CSV com os dados.",
-    )
-    parser.add_argument(
-        "--output",
-        type=Path,
-        default=Path("output"),
-        help="Diretorio onde os relatorios e figuras serao gerados.",
-    )
-    parser.add_argument(
-        "--no-html",
-        action="store_true",
-        help="Nao gerar o relatorio HTML.",
-    )
-    args = parser.parse_args()
-
-    x, y = load_data(args.dataset)
+def run_training_workflow(
+    dataset_path: Path,
+    output_dir: Path,
+    generate_html: bool = True,
+    open_report: bool = True,
+    run_context: str = "CLI - pipeline",
+) -> Dict[str, object]:
+    x, y = load_data(dataset_path)
     dataset_info = summarize_dataset(x, y)
 
     x_train, x_test, y_train, y_test = train_test_split(
@@ -481,24 +470,11 @@ def main() -> None:
     print(f"Metricas de teste: {stringify_metrics(ensemble.test_metrics)}")
 
     labels = [str(cls) for cls in sorted(y.unique())]
-    output_dir = args.output
+    output_dir.mkdir(parents=True, exist_ok=True)
     best_confusion_path = output_dir / "confusion_best.png"
     ensemble_confusion_path = output_dir / "confusion_ensemble.png"
     plot_confusion_matrix(best_model.confusion, labels, f"Matriz de Confusao - {best_model.name}", best_confusion_path)
     plot_confusion_matrix(ensemble.confusion, labels, "Matriz de Confusao - Ensemble", ensemble_confusion_path)
-
-    if not args.no_html:
-        export_html_report(
-            output_dir=output_dir,
-            dataset_info=dataset_info,
-            model_results=model_results,
-            ensemble_result=ensemble,
-            confusion_paths={
-                "best": best_confusion_path.name,
-                "ensemble": ensemble_confusion_path.name,
-            },
-        )
-        print(f"\nRelatorio HTML gerado em: {output_dir / 'report.html'}")
 
     metrics_table = pd.DataFrame(
         [
@@ -510,8 +486,208 @@ def main() -> None:
             for res in model_results + [ensemble]
         ]
     )
-    metrics_table.to_csv(output_dir / "metrics.csv", index=False)
-    print(f"Metricas consolidadas salvas em: {output_dir / 'metrics.csv'}")
+    metrics_csv_path = output_dir / "metrics.csv"
+    metrics_table.to_csv(metrics_csv_path, index=False)
+    print(f"Metricas consolidadas salvas em: {metrics_csv_path}")
+
+    report_path = output_dir / "report.html"
+    if generate_html:
+        export_html_report(
+            output_dir=output_dir,
+            dataset_info=dataset_info,
+            model_results=model_results,
+            ensemble_result=ensemble,
+            confusion_paths={
+                "best": best_confusion_path.name,
+                "ensemble": ensemble_confusion_path.name,
+            },
+            run_context=run_context,
+        )
+        print(f"Relatorio HTML gerado em: {report_path}")
+        if open_report:
+            try:
+                webbrowser.open_new_tab(report_path.resolve().as_uri())
+            except Exception as exc:  # pragma: no cover
+                print(f"Aviso: nao foi possivel abrir automaticamente o relatorio ({exc})", file=sys.stderr)
+    else:
+        print("Geracao de HTML foi desativada (--no-html).")
+
+    return {
+        "dataset_info": dataset_info,
+        "model_results": model_results,
+        "ensemble": ensemble,
+        "metrics_table": metrics_table,
+        "output_dir": output_dir,
+        "report_path": report_path if generate_html else None,
+    }
+
+
+def generate_notebook(
+    dataset_path: Path,
+    output_dir: Path,
+    run_context: str = "CLI - notebook",
+) -> Path:
+    try:
+        import nbformat as nbf
+    except ImportError as exc:  # pragma: no cover
+        raise SystemExit("nbformat is required to generate the notebook. Install it with 'pip install nbformat'.") from exc
+
+    notebook_dir = Path("notebooks")
+    notebook_dir.mkdir(parents=True, exist_ok=True)
+    notebook_path = notebook_dir / "fraud_detection.ipynb"
+
+    dataset_literal = dataset_path.resolve().as_posix()
+    output_literal = output_dir.resolve().as_posix()
+
+    markdown_intro = f"""# Detecao de Fraudes em Cartoes
+
+Notebook gerado automaticamente pelo CLI ({run_context}).
+
+Use as celulas abaixo para reproduzir o treinamento, analisar as metricas e visualizar os artefatos gerados.
+"""
+
+    setup_code = f"""from pathlib import Path
+
+DATASET_PATH = Path(r\"{dataset_literal}\")
+OUTPUT_DIR = Path(r\"{output_literal}\")
+"""
+
+    run_code = """from py.main import run_training_workflow
+
+result = run_training_workflow(
+    dataset_path=DATASET_PATH,
+    output_dir=OUTPUT_DIR,
+    generate_html=True,
+    open_report=False,
+    run_context="Notebook"
+)
+metrics = result["metrics_table"]
+metrics
+"""
+
+    confusion_code = """from IPython.display import Image, display
+
+display(Image(filename=OUTPUT_DIR / "confusion_best.png"))
+display(Image(filename=OUTPUT_DIR / "confusion_ensemble.png"))
+"""
+
+    html_preview_code = """from IPython.display import HTML
+
+report_file = OUTPUT_DIR / "report.html"
+if report_file.exists():
+    HTML(report_file.read_text(encoding="utf-8"))
+else:
+    print("Relatorio HTML ainda nao foi gerado. Rode a celula anterior primeiro.")
+"""
+
+    nb = nbf.v4.new_notebook()
+    nb["cells"] = [
+        nbf.v4.new_markdown_cell(markdown_intro),
+        nbf.v4.new_code_cell(setup_code.strip()),
+        nbf.v4.new_code_cell(run_code.strip()),
+        nbf.v4.new_code_cell(confusion_code.strip()),
+        nbf.v4.new_code_cell(html_preview_code.strip()),
+    ]
+    nb["metadata"]["kernelspec"] = {
+        "display_name": "Python 3",
+        "language": "python",
+        "name": "python3",
+    }
+    nb["metadata"]["language_info"] = {
+        "name": "python",
+        "version": f"{sys.version_info.major}.{sys.version_info.minor}",
+    }
+
+    with notebook_path.open("w", encoding="utf-8") as fp:
+        nbf.write(nb, fp)
+
+    print(f"Notebook atualizado em: {notebook_path}")
+    return notebook_path
+
+
+MODE_MAP = {
+    "1": "pipeline",
+    "2": "notebook",
+    "3": "both",
+}
+
+
+def prompt_mode_selection(initial: Optional[str]) -> str:
+    if initial:
+        if initial in MODE_MAP.values():
+            return initial
+        if initial in MODE_MAP:
+            return MODE_MAP[initial]
+        raise SystemExit(f"Modo invalido: {initial}. Use 1, 2, 3 ou as palavras pipeline/notebook/both.")
+
+    menu = (
+        "\nSelecione o modo de execucao:\n"
+        "  1 - Treinamento CLI (pipeline)\n"
+        "  2 - Gerar notebook Jupyter\n"
+        "  3 - Executar pipeline e gerar notebook\n"
+    )
+    while True:
+        try:
+            choice = input(f"{menu}Opcao: ").strip()
+        except EOFError:
+            print("\nNenhuma opcao informada; usando 'pipeline'.")
+            return "pipeline"
+        if choice in MODE_MAP:
+            return MODE_MAP[choice]
+        if choice in MODE_MAP.values():
+            return choice
+        print("Opcao invalida. Digite 1, 2 ou 3.")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Treinamento para deteccao de fraudes em cartoes.")
+    parser.add_argument(
+        "--dataset",
+        type=Path,
+        default=Path("creditcard - menor balanceado.csv"),
+        help="Caminho para o CSV com os dados.",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=Path("output"),
+        help="Diretorio onde os relatorios e figuras serao gerados.",
+    )
+    parser.add_argument(
+        "--no-html",
+        action="store_true",
+        help="Nao gerar o relatorio HTML.",
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["pipeline", "notebook", "both"],
+        help="Executa diretamente no modo escolhido (padrao: menu interativo).",
+    )
+    args = parser.parse_args()
+
+    mode = prompt_mode_selection(args.mode)
+    html_enabled = not args.no_html
+    open_report = html_enabled
+
+    if mode in {"pipeline", "both"}:
+        context = "CLI - pipeline" if mode == "pipeline" else "CLI - pipeline + notebook"
+        run_training_workflow(
+            dataset_path=args.dataset,
+            output_dir=args.output,
+            generate_html=html_enabled,
+            open_report=open_report,
+            run_context=context,
+        )
+
+    if mode in {"notebook", "both"}:
+        context = "CLI - notebook" if mode == "notebook" else "CLI - pipeline + notebook"
+        generate_notebook(
+            dataset_path=args.dataset,
+            output_dir=args.output,
+            run_context=context,
+        )
+
+    print("\nExecucao concluida.")
     if not args.no_html:
         report_path = (output_dir / "report.html").resolve()
         try:

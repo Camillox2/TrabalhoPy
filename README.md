@@ -1,61 +1,70 @@
-# Detecção de Fraudes em Cartões de Crédito
+# Detecao de Fraudes em Cartoes de Credito
 
-Projeto desenvolvido a partir do conjunto de dados fornecido em `creditcard - menor balanceado.csv` e das diretrizes do documento _Trab. Machine Learning.pdf_ (ambos devem ser adicionados manualmente à pasta do projeto). O objetivo é construir, comparar e combinar modelos de Machine Learning capazes de identificar transações fraudulentas em um cenário desbalanceado.
+Projeto desenvolvido a partir do conjunto de dados `creditcard - menor balanceado.csv` e das diretrizes do documento `Trab. Machine Learning.pdf` (ambos devem ser adicionados manualmente na raiz do projeto, pois nao sao versionados). O objetivo e comparar diferentes tecnicas de machine learning para identificar transacoes fraudulentas em um cenario desbalanceado.
 
-## Visão Geral
-- **Pré-processamento**: padronização (`StandardScaler`), seleção de atributos (`SelectKBest`) e balanceamento com SMOTE.
-- **Modelos treinados**: Regressão Logística, Random Forest, Gradient Boosting, SVM e KNN (todos com _GridSearchCV_ e validação estratificada).
-- **Ensemble**: Voting Classifier combinando os três melhores modelos individuais (voto suave ponderado pelo F1 macro).
-- **Relatórios**: métricas consolidadas em CSV, matrizes de confusão em PNG e dashboard HTML estilizado.
+## Visao geral
+- **Pre-processamento**: padronizacao (`StandardScaler`), selecao de atributos (`SelectKBest`) e balanceamento com SMOTE.
+- **Modelos avaliados**: Regressao Logistica, Random Forest, Gradient Boosting, SVM e KNN, todos ajustados com `GridSearchCV`.
+- **Ensemble**: Voting Classifier combinando os tres melhores modelos (votacao suave ponderada pelo F1 macro).
+- **Artefatos gerados**: metricas consolidadas em CSV, matrizes de confusao em PNG e relatorio HTML estilizado. Um notebook Jupyter pode ser produzido automaticamente a partir do script.
 
-## Estrutura dos Arquivos
-- `py/main.py` — script principal que executa todo o pipeline.
-- `output/` — pasta gerada automaticamente com:
-  - `report.html` — relatório interativo resumindo resultados.
-  - `confusion_best.png` — matriz de confusão do melhor modelo individual.
-  - `confusion_ensemble.png` — matriz de confusão do ensemble.
-  - `metrics.csv` — tabela com métricas de validação cruzada e de teste.
+## Estrutura
+- `py/main.py` — script principal com funcoes reutilizaveis e interface de linha de comando.
+- `output/` — pasta criada em tempo de execucao contendo:
+  - `report.html`
+  - `confusion_best.png`
+  - `confusion_ensemble.png`
+  - `metrics.csv`
+- `notebooks/fraud_detection.ipynb` — notebook gerado sob demanda (ver proxima secao).
 
 ## Requisitos
-Certifique-se de possuir Python 3.10+ instalado e de disponibilizar o arquivo `creditcard - menor balanceado.csv` na raiz do projeto (o dataset não é versionado neste repositório). Instale as dependências (user install recomendado em ambientes sem privilégios):
+1. Python 3.10 ou superior.
+2. Disponibilize `creditcard - menor balanceado.csv` na raiz do projeto.
+3. Instale as dependencias (user install recomendado):
 
 ```bash
-pip install pandas scikit-learn imbalanced-learn seaborn matplotlib jinja2
+pip install pandas scikit-learn imbalanced-learn seaborn matplotlib jinja2 nbformat
 ```
 
-## Como Executar
-No diretório `TrabalhoPy`, rode:
+## Como executar
+No diretório `TrabalhoPy` rode:
 
 ```bash
 python py/main.py
 ```
 
-O script irá:
-1. Ler o CSV e separar treino/teste estratificado (20% para teste).
-2. Ajustar e avaliar todos os modelos definidos.
-3. Construir o ensemble com os três melhores resultados.
-4. Gerar métricas e arquivos de saída na pasta `output/`.
-
-### Parâmetros úteis
-- `--dataset CAMINHO` — especifica outro CSV no mesmo formato.
-- `--output PASTA` — muda o diretório onde os resultados serão salvos (padrão `output/`).
-- `--no-html` — pula apenas a geração do `report.html` (demais arquivos são produzidos).
-
-Exemplo utilizando dataset alternativo e suprimindo o HTML:
-
-```bash
-python py/main.py --dataset dados.csv --output resultados --no-html
+Sem argumentos adicionais o script exibe um menu interativo:
+```
+1 - Treinamento CLI (pipeline)
+2 - Gerar notebook Jupyter
+3 - Executar pipeline e gerar notebook
 ```
 
-## Resultados Obtidos (amostra)
-- Melhor modelo individual (Regressão Logística): F1 Macro ≈ 0.9415, Recall Macro ≈ 0.9278, Acurácia ≈ 0.9545.
-- Ensemble (Voting Classifier): desempenho equivalente ao melhor modelo individual, mantendo recall elevado para a classe de fraude.
-- Consulte `output/metrics.csv` e `output/report.html` para detalhes completos, comparações, matrizes de confusão e relatórios por classe.
+- **Opcao 1**: executa o pipeline completo e gera os artefatos em `output/`, abrindo o HTML ao final.
+- **Opcao 2**: apenas cria/atualiza `notebooks/fraud_detection.ipynb` (o notebook, ao ser executado, chama o mesmo pipeline).
+- **Opcao 3**: executa o pipeline e, na sequencia, atualiza o notebook.
 
-## Personalizações Sugeridas
-- Ajustar os grids de hiperparâmetros em `build_model_configs()` para expandir a busca.
-- Incluir novos classificadores (ex.: XGBoost, LightGBM) seguindo o mesmo padrão de _pipeline_.
-- Acrescentar novas visualizações no HTML (ex.: importância de features) aproveitando o template Jinja2 existente.
+### Parametros uteis
+- `--mode {pipeline,notebook,both}`: pula o menu interativo e escolhe o modo diretamente.
+- `--dataset CAMINHO`: usa outro CSV no mesmo formato.
+- `--output PASTA`: define pasta de saida (padrao `output/`).
+- `--no-html`: desativa geracao e abertura do `report.html`.
+
+Exemplo executando somente o notebook (sem HTML):
+
+```bash
+python py/main.py --mode notebook --no-html
+```
+
+## Resultados resumidos (execucao de referencia)
+- Melhor modelo individual: Regressao Logistica (F1 macro de aproximadamente 0.9415).
+- Ensemble: desempenho equivalente ao melhor modelo individual, mantendo alto recall para a classe fraude.
+- Consulte `output/metrics.csv` e `output/report.html` para detalhes, matrizes de confusao e relatorios textuais.
+
+## Personalizacoes sugeridas
+- Ajustar os grids em `build_model_configs()` para ampliar a busca de hiperparametros.
+- Incluir novos algoritmos (por exemplo XGBoost ou LightGBM) seguindo o padrao de pipeline.
+- Estender o notebook com exploracao adicional ou visualizacoes complementares.
 
 ---
-Trabalho desenvolvido para o estudo de detecção de fraudes com foco em dados desbalanceados e comparação de técnicas de balanceamento, seleção de atributos, ajuste fino e ensemble.
+Trabalho realizado para estudo de detecao de fraudes em cartoes, contemplando balanceamento de dados, selecao de atributos, tuning de hiperparametros e ensembles.
